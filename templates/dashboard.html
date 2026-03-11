@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Vendas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=1.1">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+    <div class="container container-dashboard">
+        <nav class="top-nav">
+            <a href="{{ url_for('index') }}" class="nav-link">Home</a>
+            <a href="{{ url_for('cadastro') }}" class="nav-link">Nova Venda</a>
+            <a href="{{ url_for('vendas') }}" class="nav-link">Ver Vendas</a>
+            <a href="{{ url_for('logout') }}" class="nav-link" style="color: #fca5a5; margin-left: 1rem;">Sair ({{
+                session.user_nome }})</a>
+        </nav>
+        <header class="hero" style="margin-top: 1.5rem;">
+            <h1>Dashboard</h1>
+            <p class="subtitle" style="margin-bottom: 2rem;">Resumo geral de desempenho do seu negócio.</p>
+        </header>
+
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <h3>Faturamento Total</h3>
+                <p class="metric-value highlight">R$ {{ metrics.faturamento | currency }}</p>
+            </div>
+            <div class="metric-card">
+                <h3>Vendas Cadastradas</h3>
+                <p class="metric-value">{{ metrics.vendas }}</p>
+            </div>
+            <div class="metric-card">
+                <h3>Itens Vendidos</h3>
+                <p class="metric-value">{{ metrics.itens }}</p>
+            </div>
+            <div class="metric-card">
+                <h3>Ticket Médio</h3>
+                <p class="metric-value highlight">R$ {{ metrics.ticket | currency }}</p>
+            </div>
+            <div class="metric-card">
+                <h3>Produto Destaque</h3>
+                <p class="metric-value text">{{ metrics.produto_top }}</p>
+            </div>
+            <div class="metric-card">
+                <h3>Melhor Categoria</h3>
+                <p class="metric-value text">{{ metrics.categoria_top }}</p>
+            </div>
+            <div class="metric-card">
+                <h3>Top Pagamento</h3>
+                <p class="metric-value text">{{ metrics.pagamento_top }}</p>
+            </div>
+        </div>
+
+        <div class="charts-grid">
+            <div class="chart-card">
+                <h3>Receita por Produto (R$)</h3>
+                <canvas id="barChart"></canvas>
+            </div>
+            <div class="chart-card">
+                <h3>Vendas por Categoria (Volume)</h3>
+                <canvas id="pieQtdChart"></canvas>
+            </div>
+            <div class="chart-card">
+                <h3>Faturamento por Categoria (R$)</h3>
+                <canvas id="doughnutChart"></canvas>
+            </div>
+            <div class="chart-card">
+                <h3>Evolução do Faturamento Mensal</h3>
+                <canvas id="lineChart"></canvas>
+            </div>
+            <div class="chart-card">
+                <h3>Preferência de Pagamento</h3>
+                <canvas id="polarChart"></canvas>
+            </div>
+        </div>
+
+        <div class="recent-sales">
+            <h2 style="text-align: left; margin: 2.5rem 0 1rem; font-size: 1.25rem;">Últimas 5 Vendas</h2>
+            <div class="table-responsive">
+                <table class="sales-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Data</th>
+                            <th>Produto</th>
+                            <th>Preço Total (R$)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for venda in recentes %}
+                        <tr>
+                            <td>#{{ venda.id }}</td>
+                            <td>{{ venda.data_venda | date_br }}</td>
+                            <td>{{ venda.produto }} <span style="font-size: 0.8rem; color: #9ca3af;">(x{{
+                                    venda.quantidade }})</span></td>
+                            <td style="font-weight: 600; color: #4facfe;">R$ {{ (venda.quantidade *
+                                venda.preco_unitario) | currency }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4" style="text-align: center; padding: 2rem;">Nenhuma venda recente.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Inicialização dos Gráficos com Chart.js -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // Lendo dados injetados via jinja2 de forma segura para Array JS
+            const backendData = {{ chart_data | tojson | safe
+        }};
+
+        // Global Chart config para o Tema Dark/Neon
+        Chart.defaults.color = '#94a3b8';
+        Chart.defaults.font.family = "'Inter', sans-serif";
+        const neonBlue = '#00f2fe';
+        const neonMagenta = '#ec4899';
+        const neonGreen = '#10b981';
+        const neonPurple = '#8b5cf6';
+        const neonOrange = '#f59e0b';
+
+        const colorPallete = [neonBlue, neonPurple, neonMagenta, neonGreen, neonOrange, '#3fb950', '#a371f7'];
+
+        /** 0. Helper State de checagem "Vazio" */
+        if (backendData.produtos.length === 0) {
+            Chart.defaults.plugins.title.display = true;
+            Chart.defaults.plugins.title.text = 'Nenhuma venda registrada ainda.';
+        }
+
+        /** 1. GRÁFICO DE BARRAS (Top Produtos) */
+        new Chart(document.getElementById('barChart'), {
+            type: 'bar',
+            data: {
+                labels: backendData.produtos,
+                datasets: [{
+                    label: 'Faturamento Bruto',
+                    data: backendData.faturamento_produtos,
+                    backgroundColor: 'rgba(0, 242, 254, 0.6)',
+                    borderColor: neonBlue,
+                    borderWidth: 1,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { grid: { color: 'rgba(71, 85, 105, 0.2)' } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+
+        /** 2. GRÁFICO PIE (Categorias - Volume/Qtd) */
+        new Chart(document.getElementById('pieQtdChart'), {
+            type: 'pie',
+            data: {
+                labels: backendData.categorias_qtd_labels,
+                datasets: [{
+                    data: backendData.categorias_qtd_valores,
+                    backgroundColor: colorPallete,
+                    borderColor: 'rgba(15, 23, 42, 1)',
+                    borderWidth: 2,
+                    hoverOffset: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'bottom' },
+                    tooltip: {
+                        callbacks: {
+                            label: function (context) {
+                                return ' ' + context.parsed + ' itens vendidos';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        /** 3. GRÁFICO DE DOUGHNUT (Categorias - Faturamento Financeiro) */
+        new Chart(document.getElementById('doughnutChart'), {
+            type: 'doughnut',
+            data: {
+                labels: backendData.categorias,
+                datasets: [{
+                    data: backendData.faturamento_categorias,
+                    backgroundColor: colorPallete,
+                    borderColor: 'rgba(15, 23, 42, 1)',
+                    borderWidth: 2,
+                    hoverOffset: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                cutout: '65%',
+                plugins: {
+                    legend: { position: 'bottom' },
+                    tooltip: {
+                        callbacks: {
+                            label: function (context) {
+                                return ' R$ ' + context.parsed.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        /** 4. GRÁFICO DE LINHAS (Evolução Temporal) */
+        new Chart(document.getElementById('lineChart'), {
+            type: 'line',
+            data: {
+                labels: backendData.datas,
+                datasets: [{
+                    label: 'Receita no Dia (R$)',
+                    data: backendData.faturamento_linha,
+                    borderColor: neonMagenta,
+                    backgroundColor: 'rgba(236, 72, 153, 0.2)',
+                    borderWidth: 3,
+                    pointBackgroundColor: neonMagenta,
+                    pointRadius: 4,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(71, 85, 105, 0.2)' }
+                    },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+
+        /** 5. GRÁFICO POLAR (Meios de Pagamento) */
+        new Chart(document.getElementById('polarChart'), {
+            type: 'polarArea',
+            data: {
+                labels: backendData.pagamentos,
+                datasets: [{
+                    data: backendData.qtd_pagamentos,
+                    backgroundColor: [
+                        'rgba(16, 185, 129, 0.5)',
+                        'rgba(139, 92, 246, 0.5)',
+                        'rgba(245, 158, 11, 0.5)',
+                        'rgba(0, 242, 254, 0.5)'
+                    ],
+                    borderColor: [neonGreen, neonPurple, neonOrange, neonBlue],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    r: {
+                        grid: { color: 'rgba(71, 85, 105, 0.3)' },
+                        angleLines: { color: 'rgba(71, 85, 105, 0.3)' },
+                        ticks: { backdropColor: 'transparent', color: '#cbd5e1' }
+                    }
+                },
+                plugins: { legend: { position: 'right' } }
+            }
+        });
+        });
+    </script>
+    <script src="{{ url_for('static', filename='js/main.js') }}?v=1.1"></script>
+</body>
+
+</html>

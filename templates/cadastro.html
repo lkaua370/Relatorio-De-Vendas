@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro de Vendas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=1.1">
+</head>
+
+<body>
+    <div class="container form-container">
+        <nav class="top-nav">
+            <a href="{{ url_for('index') }}" class="nav-link">Home</a>
+            <a href="{{ url_for('vendas') }}" class="nav-link">Ver Vendas</a>
+            <a href="{{ url_for('dashboard') }}" class="nav-link">Dashboard</a>
+            <a href="{{ url_for('logout') }}" class="nav-link" style="color: #fca5a5; margin-left: 1rem;">Sair ({{
+                session.user_nome }})</a>
+        </nav>
+        <header class="hero" style="margin-top: 2rem;">
+            <h1>{% if venda %}Editar Venda #{{ venda.id }}{% else %}Nova Venda{% endif %}</h1>
+            <p class="subtitle">{% if venda %}Altere os dados abaixo para atualizar o registro.{% else %}Preencha os
+                dados abaixo para registrar a venda.{% endif %}</p>
+        </header>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="flash-messages" style="margin-bottom: 1.5rem;">
+            {% for category, message in messages %}
+            <div class="flash-message {{ category }}"
+                style="padding: 1rem; border-radius: 8px; background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #fca5a5; text-align: center; font-weight: 600;">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <form action="{% if venda %}{{ url_for('editar', id=venda.id) }}{% else %}{{ url_for('cadastro') }}{% endif %}"
+            method="POST" class="sales-form">
+            <div class="form-group">
+                <label for="produto">Produto</label>
+                <input type="text" id="produto" name="produto" required placeholder="Ex: Notebook DELL"
+                    value="{{ venda.produto if venda else '' }}">
+            </div>
+
+            <div class="form-group row">
+                <div class="col">
+                    <label for="categoria">Categoria</label>
+                    <select id="categoria" name="categoria" required>
+                        <option value="">Selecione a categoria...</option>
+                        <option value="eletronicos" {% if venda and venda.categoria=='eletronicos' %}selected{% endif
+                            %}>Eletrônicos</option>
+                        <option value="acessorios" {% if venda and venda.categoria=='acessorios' %}selected{% endif %}>
+                            Acessórios</option>
+                        <option value="servicos" {% if venda and venda.categoria=='servicos' %}selected{% endif %}>
+                            Serviços</option>
+                    </select>
+                </div>
+                <div class="col">
+                    <label for="quantidade">Quantidade</label>
+                    <input type="number" id="quantidade" name="quantidade" min="1" required placeholder="Ex: 2"
+                        value="{{ venda.quantidade if venda else '' }}">
+                </div>
+            </div>
+
+            <div class="form-group row">
+                <div class="col">
+                    <label for="preco">Preço Unitário (R$)</label>
+                    <input type="text" id="preco" name="preco" inputmode="decimal" required placeholder="Ex: 1.000,50"
+                        value="{% if venda %}{{ venda.preco_unitario | currency }}{% endif %}">
+                </div>
+                <div class="col">
+                    <label for="data">Data da Venda</label>
+                    <input type="date" id="data" name="data" required value="{{ venda.data_venda if venda else '' }}">
+                </div>
+            </div>
+
+            <div class="form-group row">
+                <div class="col">
+                    <label for="vendedor">Vendedor</label>
+                    <input type="text" id="vendedor" name="vendedor" required placeholder="Nome do vendedor responsável"
+                        value="{{ venda.vendedor if venda else '' }}">
+                </div>
+                <div class="col">
+                    <label for="pagamento">Forma de Pagamento</label>
+                    <select id="pagamento" name="pagamento" required>
+                        <option value="">Selecione o pagamento...</option>
+                        <option value="pix" {% if venda and venda.forma_pagamento=='pix' %}selected{% endif %}>PIX
+                        </option>
+                        <option value="cartao_credito" {% if venda and venda.forma_pagamento=='cartao_credito'
+                            %}selected{% endif %}>Cartão de Crédito</option>
+                        <option value="cartao_debito" {% if venda and venda.forma_pagamento=='cartao_debito'
+                            %}selected{% endif %}>Cartão de Débito</option>
+                        <option value="dinheiro" {% if venda and venda.forma_pagamento=='dinheiro' %}selected{% endif
+                            %}>Dinheiro</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <a href="{{ url_for('index') }}" class="btn-cancel">Voltar</a>
+                <button type="submit" class="btn-submit">Salvar Venda</button>
+            </div>
+        </form>
+    </div>
+    <script src="{{ url_for('static', filename='js/main.js') }}?v=1.1"></script>
+</body>
+
+</html>
