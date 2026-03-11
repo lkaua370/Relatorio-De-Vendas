@@ -1,4 +1,4 @@
-# Relatório de Vendas - Klaus
+# Relatório de Vendas 
 
 Um sistema web completo para gerenciamento e controle de vendas, desenvolvido com **Python**, **Flask** e **SQLite**. 
 
