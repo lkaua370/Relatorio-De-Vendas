@@ -9,7 +9,7 @@
 
 <br />
 
-# 📊 Sistema "Relatório de Vendas - Klaus"
+# 📊 Sistema "Relatório de Vendas"
 
 Uma solução Web Full-Stack desenvolvida para o gerenciamento de inventário, registro de vendas e acompanhamento financeiro através de relatórios. O sistema combina um back-end robusto construído com **Python/Flask** e um front-end moderno inspirado em um design **Sci-Fi / Futurista / Cyberpunk**, com elementos refinados como *Glassmorphism* (vidro fumê/neon) e animações dinâmicas de fundo.
 
@@ -55,7 +55,7 @@ Uma solução Web Full-Stack desenvolvida para o gerenciamento de inventário, r
 ---
 
 ## 🎨 Arquitetura de Design (UI/UX)
-O grande diferencial da interface é o seu tema visual apelidado de **Tons Obscuros - Klaus**:
+O grande diferencial da interface é o seu tema visual apelidado de **Tons Obscuros**:
 *   Fundo animado gerado matematicamente com JS (Efeito Estelar/Grid Matrix).
 *   Glow Effect e animação constante durante "hovers" em cartões de apresentação.
 *   Centralização do conteúdo (Cards), transmitindo organização e foco nos números mais importantes do relatório.
